@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for
 import pymysql
 from config import Config
 
@@ -51,6 +51,31 @@ def show_all():
         recipes = cursor.fetchall()  # Fetch all recipes
     connection.close()
     return render_template('index.html', recipes=recipes)
+
+# Add Recipe route - to handle recipe submission
+@app.route('/add_recipe', methods=['POST'])
+def add_recipe():
+    food_item = request.form['food_item']
+    recipe = request.form['recipe']
+    message = ""
+
+    if food_item and recipe:
+        connection = get_db_connection()
+        try:
+            with connection.cursor() as cursor:
+                # Insert the new recipe into the Recipes table
+                cursor.execute("""
+                    INSERT INTO Recipes (food_item, recipe) 
+                    VALUES (%s, %s)
+                """, (food_item, recipe))
+                connection.commit()
+                message = "Recipe added successfully!"
+        except Exception as e:
+            message = f"Error: {str(e)}"
+        finally:
+            connection.close()
+
+    return render_template('index.html', message=message)
 
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0", port=8085)
